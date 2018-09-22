@@ -412,3 +412,9 @@ fn test_flatten_enum_in_struct() {
         enumeration: Enumeration::A { a: 50 },
     })
 }
+
+#[test]
+fn test_boolean_coercion() {
+    assert_eq!(false, from_str("i0e").unwrap());
+    assert_eq!(true, from_str("i1e").unwrap());
+}
