@@ -353,3 +353,15 @@ fn ser_de_variant_struct() {
 fn test_to_bytes() {
     assert_eq!(to_bytes(&"test").unwrap(), b"4:test");
 }
+
+#[test]
+fn test_enum() {
+    #[serde(tag = "type", content = "content")]
+    #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+    enum TestEnum {
+        A { a: u8 },
+        B { b: u8 }
+    }
+
+    test_ser_de_eq(TestEnum::A { a: 10 })
+}
