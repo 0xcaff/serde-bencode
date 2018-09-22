@@ -1,11 +1,11 @@
+use serde::de::Error as DeError;
+use serde::de::{Expected, Unexpected};
+use serde::ser::Error as SerError;
+use std::error::Error as StdError;
 use std::fmt;
 use std::fmt::Display;
-use std::error::Error as StdError;
 use std::io::Error as IoError;
 use std::result::Result as StdResult;
-use serde::ser::Error as SerError;
-use serde::de::Error as DeError;
-use serde::de::{Unexpected, Expected};
 
 pub type Result<T> = StdResult<T, Error>;
 
@@ -47,15 +47,17 @@ impl DeError for Error {
     }
 
     fn unknown_variant(field: &str, expected: &'static [&'static str]) -> Self {
-        Error::UnknownVariant(format!("Unknown Variant: `{}` (expected one of: {:?})",
-                                      field,
-                                      expected))
+        Error::UnknownVariant(format!(
+            "Unknown Variant: `{}` (expected one of: {:?})",
+            field, expected
+        ))
     }
 
     fn unknown_field(field: &str, expected: &'static [&'static str]) -> Self {
-        Error::UnknownField(format!("Unknown Field: `{}` (expected one of: {:?})",
-                                    field,
-                                    expected))
+        Error::UnknownField(format!(
+            "Unknown Field: `{}` (expected one of: {:?})",
+            field, expected
+        ))
     }
 
     fn missing_field(field: &'static str) -> Self {
