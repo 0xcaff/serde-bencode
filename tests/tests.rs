@@ -392,3 +392,23 @@ fn test_enum() {
 
     test_ser_de_eq(TestEnum::A { a: 10 })
 }
+
+#[test]
+fn test_flatten_enum_in_struct() {
+    #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+    struct Struct {
+        #[serde(flatten)]
+        enumeration: Enumeration,
+    }
+
+    #[serde(tag = "type", content = "content")]
+    #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+    enum Enumeration {
+        A { a: u8 },
+        B { b: u8 },
+    }
+
+    test_ser_de_eq(Struct {
+        enumeration: Enumeration::A { a: 50 },
+    })
+}
