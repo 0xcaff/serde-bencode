@@ -50,6 +50,10 @@ impl<'de, 'a, R: 'a + Read> de::MapAccess<'de> for BencodeAccess<'a, R> {
     {
         match self.de.parse()? {
             ParseResult::End => Ok(None),
+            ParseResult::Bytes(s, _) => {
+                self.de.next = Some(ParseResult::Bytes(s, true));
+                Ok(Some(seed.deserialize(&mut *self.de)?))
+            }
             r @ _ => {
                 self.de.next = Some(r);
                 Ok(Some(seed.deserialize(&mut *self.de)?))
@@ -109,7 +113,7 @@ impl<'de, 'a, R: 'a + Read> de::EnumAccess<'de> for BencodeAccess<'a, R> {
     type Variant = Self;
     fn variant_seed<V: de::DeserializeSeed<'de>>(self, seed: V) -> Result<(V::Value, Self)> {
         match self.de.parse()? {
-            t @ ParseResult::Bytes(_) => {
+            t @ ParseResult::Bytes(_, _) => {
                 self.de.next = Some(t);
                 Ok((seed.deserialize(&mut *self.de)?, self))
             }
@@ -125,7 +129,7 @@ impl<'de, 'a, R: 'a + Read> de::EnumAccess<'de> for BencodeAccess<'a, R> {
 #[derive(Debug, Eq, PartialEq)]
 enum ParseResult {
     Int(i64),
-    Bytes(Vec<u8>),
+    Bytes(Vec<u8>, bool),
     /// list start
     List,
     /// map start
@@ -216,7 +220,7 @@ impl<'de, R: Read> Deserializer<R> {
         }
         match buf[0] {
             b'i' => Ok(ParseResult::Int(self.parse_int()?)),
-            n @ b'0'...b'9' => Ok(ParseResult::Bytes(self.parse_bytes(n)?)),
+            n @ b'0'...b'9' => Ok(ParseResult::Bytes(self.parse_bytes(n)?, false)),
             b'l' => Ok(ParseResult::List),
             b'd' => Ok(ParseResult::Map),
             b'e' => Ok(ParseResult::End),
@@ -235,7 +239,11 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<R> {
     fn deserialize_any<V: de::Visitor<'de>>(mut self, visitor: V) -> Result<V::Value> {
         match self.parse()? {
             ParseResult::Int(i) => visitor.visit_i64(i),
-            ParseResult::Bytes(s) => visitor.visit_bytes(s.as_ref()),
+            ParseResult::Bytes(s, false) => visitor.visit_bytes(s.as_ref()),
+            ParseResult::Bytes(s, true) => visitor.visit_str(
+                str::from_utf8(&s)
+                    .map_err(|_| Error::InvalidValue("Non UTF-8 String Encoding".to_string()))?,
+            ),
             ParseResult::List => visitor.visit_seq(BencodeAccess::new(&mut self, None)),
             ParseResult::Map => visitor.visit_map(BencodeAccess::new(&mut self, None)),
             ParseResult::End => Err(Error::EndOfStream),
@@ -250,7 +258,7 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<R> {
 
     fn deserialize_str<V: de::Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
         match self.parse()? {
-            ParseResult::Bytes(s) => visitor.visit_str(
+            ParseResult::Bytes(s, _) => visitor.visit_str(
                 str::from_utf8(&s)
                     .map_err(|_| Error::InvalidValue("Non UTF-8 String Encoding".to_string()))?,
             ),
