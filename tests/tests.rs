@@ -414,7 +414,27 @@ fn test_flatten_enum_in_struct() {
 }
 
 #[test]
-fn test_boolean_coercion() {
+fn test_boolean_decode() {
     assert_eq!(false, from_str("i0e").unwrap());
     assert_eq!(true, from_str("i1e").unwrap());
+
+    #[derive(Deserialize, Eq, PartialEq, Debug)]
+    struct Nested {
+        f: bool,
+    }
+    assert_eq!(Nested { f: true }, from_str("d1:fi1ee").unwrap());
+    assert_eq!(Nested { f: false }, from_str("d1:fi0ee").unwrap());
+}
+
+#[test]
+fn test_boolean_encode() {
+    assert_eq!("i1e", to_string(&true).unwrap());
+    assert_eq!("i0e", to_string(&false).unwrap());
+
+    #[derive(Serialize, Eq, PartialEq, Debug)]
+    struct Nested {
+        f: bool,
+    }
+    assert_eq!("d1:fi1ee", to_string(&Nested { f: true }).unwrap());
+    assert_eq!("d1:fi0ee", to_string(&Nested { f: false }).unwrap());
 }
