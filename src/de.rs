@@ -259,8 +259,7 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<R> {
     fn deserialize_bool<V: de::Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
         match self.parse()? {
             ParseResult::Int(0) => visitor.visit_bool(false),
-            ParseResult::Int(1) => visitor.visit_bool(true),
-            ParseResult::Int(n) => Err(Error::InvalidValue(format!("Expected 0 or 1 got {}", n))),
+            ParseResult::Int(a) if a > 0 => visitor.visit_bool(true),
             _ => Err(Error::InvalidType(
                 "Expected number or boolean.".to_string(),
             )),
