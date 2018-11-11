@@ -251,19 +251,9 @@ impl<'de, 'a, R: Read> de::Deserializer<'de> for &'a mut Deserializer<R> {
     }
 
     forward_to_deserialize_any! {
-        i64 string seq i8 i16 i32 u8 u16 u32
+        i64 string seq bool i8 i16 i32 u8 u16 u32
         u64 f32 f64 char unit bytes byte_buf map unit_struct tuple_struct tuple
         ignored_any identifier struct
-    }
-
-    fn deserialize_bool<V: de::Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
-        match self.parse()? {
-            ParseResult::Int(0) => visitor.visit_bool(false),
-            ParseResult::Int(a) if a > 0 => visitor.visit_bool(true),
-            _ => Err(Error::InvalidType(
-                "Expected number or boolean.".to_string(),
-            )),
-        }
     }
 
     fn deserialize_str<V: de::Visitor<'de>>(self, visitor: V) -> Result<V::Value> {
